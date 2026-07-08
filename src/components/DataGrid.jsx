@@ -84,7 +84,7 @@ export default function DataGrid({ reportId, reportName, rowData = [], loading }
         ]
     }
   }, [reportId])
-
+let v= 0
   const formatCurrency = value => {
     if (value === undefined || value === null || Number.isNaN(Number(value))) return '-'
     return `$${Number(value).toLocaleString()}`
