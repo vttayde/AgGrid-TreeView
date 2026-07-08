@@ -1,0 +1,153 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+* {
+  box-sizing: border-box;
+}
+
+html, body, #root {
+  height: 100%;
+  width: 100%;
+  overflow: hidden;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  @apply bg-slate-50 text-slate-900 antialiased;
+}
+
+/* Scrollbar Styling */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: #f1f5f9;
+  border-radius: 10px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 10px;
+  border: 2px solid #f1f5f9;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
+}
+
+/* Firefox Scrollbar */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: #cbd5e1 #f1f5f9;
+}
+
+/* AG Grid Styling */
+.ag-theme-alpine {
+  --ag-header-background-color: #f1f5f9;
+  --ag-header-border-color: #e2e8f0;
+  --ag-header-foreground-color: #1e293b;
+  --ag-border-color: #e2e8f0;
+  --ag-row-border-color: #f1f5f9;
+  --ag-odd-row-background-color: #ffffff;
+  --ag-even-row-background-color: #f8fafc;
+  --ag-hover-row-background-color: #f1f5f9;
+  --ag-cell-horizontal-padding: 12px;
+  --ag-font-size: 14px;
+}
+
+.ag-theme-alpine .ag-header-cell {
+  font-weight: 600;
+  font-size: 0.875rem;
+  padding: 12px 8px;
+  background-color: #f8fafc;
+}
+
+.ag-theme-alpine .ag-cell {
+  padding: 10px 8px;
+  font-size: 0.875rem;
+  display: flex;
+  align-items: center;
+}
+
+.ag-theme-alpine .ag-row {
+  border-bottom: 1px solid #e2e8f0;
+  background-color: #ffffff;
+}
+
+.ag-theme-alpine .ag-row:hover {
+  background-color: #f1f5f9 !important;
+}
+
+.ag-theme-alpine .ag-row--even {
+  background-color: #f8fafc;
+}
+
+.ag-theme-alpine .ag-row--even:hover {
+  background-color: #f1f5f9 !important;
+}
+
+/* Row highlighting */
+.ag-theme-alpine .row-high-priority {
+  background-color: rgba(254, 202, 202, 0.5) !important;
+}
+
+.ag-theme-alpine .row-completed {
+  background-color: rgba(220, 252, 231, 0.5) !important;
+}
+
+.ag-theme-alpine .row-low-progress {
+  background-color: rgba(255, 243, 205, 0.5) !important;
+}
+
+/* Overlay styling */
+.ag-overlay-loading-center {
+  color: #64748b;
+  font-weight: 500;
+  font-size: 14px;
+}
+
+/* Transitions & Animations */
+* {
+  @apply transition-colors duration-200;
+}
+
+button, a {
+  @apply focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500;
+}
+
+/* Layout fixes */
+.overflow-hidden {
+  overflow: hidden;
+}
+
+.overflow-y-auto {
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+
+/* Scrollbar thin variant */
+.scrollbar-thin {
+  scrollbar-width: thin;
+}
+
+.scrollbar-thin::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+.scrollbar-track-slate-100::-webkit-scrollbar-track {
+  background: #f1f5f9;
+}
+
+.scrollbar-thumb-slate-300::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 3px;
+}
+
+.scrollbar-thumb-slate-300::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
+}
