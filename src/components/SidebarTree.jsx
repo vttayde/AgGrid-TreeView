@@ -1,7 +1,6 @@
 import React, { useState } from 'react'
 import Drawer from '@mui/material/Drawer'
 import Box from '@mui/material/Box'
-import IconButton from '@mui/material/IconButton'
 import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined'
 import CloseIcon from '@mui/icons-material/Close'
 import ReceiptIcon from '@mui/icons-material/Receipt'
@@ -64,7 +63,7 @@ function countLeafReports(node) {
   return node.children.reduce((count, child) => count + countLeafReports(child), 0)
 }
 
-export default function SidebarTree({ tree = [], selectedReport, onSelectReport }) {
+export default function SidebarTree({ tree = [], selectedReport, collapsed = false, onSelectReport }) {
   const [expanded, setExpanded] = useState(() => getCategoryIds(tree))
   const [drawerOpen, setDrawerOpen] = useState(false)
   const [drawerNode, setDrawerNode] = useState(null)
@@ -80,28 +79,33 @@ export default function SidebarTree({ tree = [], selectedReport, onSelectReport 
     if (isCategory) {
       const { icon, color, bgColor } = getIconColorForNode(node.label)
       return (
-        <div key={node.id} className={level === 0 ? 'rounded-xl border border-slate-200 overflow-hidden shadow-sm mb-2' : 'mb-1'}>
+        <div key={node.id} className={level === 0 ? 'border-slate-200 overflow-hidden shadow-sm mb-2' : 'mb-1 border'}>
           <button
             type="button"
             onClick={() => toggleCategory(node.id)}
-            className={`w-full flex items-center justify-between px-4 ${level === 0 ? 'py-2.5' : 'py-2 text-sm'} transition-all duration-200 ${level === 0 ? `${bgColor} hover:scale-[1.01] border-b border-slate-200` : 'hover:bg-slate-50 border-b border-slate-100'}`}
+            style={{ paddingLeft: `${12 + level * 12}px` }}
+            className={`w-full flex items-center gap-3 ${collapsed ? 'justify-center' : 'justify-between'} px-4 ${level === 0 ? 'py-2.5' : 'py-2 text-sm'} transition-all duration-200 ${level === 0 ? `${bgColor} hover:scale-[1.01] border-b border-slate-200` : 'hover:bg-slate-50 border-b border-slate-100'}`}
           >
-            <div className="flex items-center gap-3 flex-1 min-w-0">
+            <div className={`flex items-center gap-3 ${collapsed ? '' : 'flex-1 min-w-0'}`}>
               <span className={`${color} flex items-center justify-center flex-shrink-0 rounded-full bg-white/80 p-2 ${level === 0 ? 'text-2xl' : 'text-lg'}`}>
                 {icon}
               </span>
-              <div className="flex flex-col items-start min-w-0 flex-1">
-                <span className={`${level === 0 ? 'font-bold text-slate-900' : 'font-semibold text-slate-800 text-sm'} truncate`}>
-                  {node.label}
-                </span>
-                {level === 0 && (
-                  <span className="text-xs text-slate-500 mt-0.5">{countLeafReports(node)} reports</span>
-                )}
-              </div>
+              {!collapsed && (
+                <div className="flex flex-col items-start min-w-0 flex-1">
+                  <span className={`${level === 0 ? 'font-bold text-slate-900' : 'font-semibold text-slate-800 text-sm'} truncate`}>
+                    {node.label}
+                  </span>
+                  {level === 0 && (
+                    <span className="text-xs text-slate-500 mt-0.5">{countLeafReports(node)} reports</span>
+                  )}
+                </div>
+              )}
             </div>
-            <span className={`text-slate-400 transition-transform flex-shrink-0 ${isExpanded ? 'rotate-180' : ''}`}>
-              {isExpanded ? <KeyboardArrowDownIcon /> : <ChevronRightIcon />}
-            </span>
+            {!collapsed && (
+              <span className={`text-slate-400 transition-transform flex-shrink-0 ${isExpanded ? 'rotate-180' : ''}`}>
+                {isExpanded ? <KeyboardArrowDownIcon /> : <ChevronRightIcon />}
+              </span>
+            )}
           </button>
           
           {isExpanded && (
@@ -121,6 +125,7 @@ export default function SidebarTree({ tree = [], selectedReport, onSelectReport 
         key={node.id}
         type="button"
         onClick={() => { onSelectReport(node.id, node.label) }}
+        style={{ paddingLeft: `${12 + level * 12}px` }}
         className={`w-full flex items-center gap-3 px-4 py-2 text-sm text-left transition-all duration-200 border-l-4 flex-shrink-0 ${
           isSelected
             ? 'bg-slate-100 border-l-4 border-blue-500 font-semibold text-slate-900 shadow-sm'
@@ -128,14 +133,17 @@ export default function SidebarTree({ tree = [], selectedReport, onSelectReport 
         }`}
       >
         <span className={`${color} flex items-center justify-center flex-shrink-0 rounded-full bg-slate-100 p-2 text-lg`}>{icon}</span>
-        <span className="truncate flex-1">{node.label}</span>
-        <IconButton
-          size="small"
-          onClick={e => { e.stopPropagation(); setDrawerNode(node); setDrawerOpen(true); }}
-          aria-label="More info"
-        >
-          <InfoOutlinedIcon fontSize="small" />
-        </IconButton>
+        {!collapsed && <span className="truncate flex-1">{node.label}</span>}
+        {!collapsed && (
+          <span
+            role="button"
+            onClick={e => { e.stopPropagation(); setDrawerNode(node); setDrawerOpen(true); }}
+            aria-label="More info"
+            className="inline-flex h-8 w-8 items-center justify-center rounded-full text-slate-500 hover:bg-slate-200 hover:text-slate-900"
+          >
+            <InfoOutlinedIcon fontSize="small" />
+          </span>
+        )}
       </button>
     )
   }
@@ -155,9 +163,14 @@ export default function SidebarTree({ tree = [], selectedReport, onSelectReport 
                 <p className="text-sm text-slate-500 mt-1">Leaf report</p>
               )}
             </div>
-            <IconButton onClick={() => setDrawerOpen(false)}>
-              <CloseIcon />
-            </IconButton>
+            <button
+              type="button"
+              onClick={() => setDrawerOpen(false)}
+              className="rounded-full p-2 text-slate-500 hover:bg-slate-100 hover:text-slate-900"
+              aria-label="Close drawer"
+            >
+              <CloseIcon className="h-5 w-5" />
+            </button>
           </div>
 
           <div className="mt-4">
