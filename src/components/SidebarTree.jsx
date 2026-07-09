@@ -1,4 +1,9 @@
 import React, { useState } from 'react'
+import Drawer from '@mui/material/Drawer'
+import Box from '@mui/material/Box'
+import IconButton from '@mui/material/IconButton'
+import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined'
+import CloseIcon from '@mui/icons-material/Close'
 import ReceiptIcon from '@mui/icons-material/Receipt'
 import StorageIcon from '@mui/icons-material/Storage'
 import AccountBalanceIcon from '@mui/icons-material/AccountBalance'
@@ -61,6 +66,8 @@ function countLeafReports(node) {
 
 export default function SidebarTree({ tree = [], selectedReport, onSelectReport }) {
   const [expanded, setExpanded] = useState(() => getCategoryIds(tree))
+  const [drawerOpen, setDrawerOpen] = useState(false)
+  const [drawerNode, setDrawerNode] = useState(null)
 
   const toggleCategory = id => {
     setExpanded(current => current.includes(id) ? current.filter(item => item !== id) : [...current, id])
@@ -113,7 +120,7 @@ export default function SidebarTree({ tree = [], selectedReport, onSelectReport 
       <button
         key={node.id}
         type="button"
-        onClick={() => onSelectReport(node.id, node.label)}
+        onClick={() => { onSelectReport(node.id, node.label) }}
         className={`w-full flex items-center gap-3 px-4 py-2 text-sm text-left transition-all duration-200 border-l-4 flex-shrink-0 ${
           isSelected
             ? 'bg-slate-100 border-l-4 border-blue-500 font-semibold text-slate-900 shadow-sm'
@@ -122,6 +129,13 @@ export default function SidebarTree({ tree = [], selectedReport, onSelectReport 
       >
         <span className={`${color} flex items-center justify-center flex-shrink-0 rounded-full bg-slate-100 p-2 text-lg`}>{icon}</span>
         <span className="truncate flex-1">{node.label}</span>
+        <IconButton
+          size="small"
+          onClick={e => { e.stopPropagation(); setDrawerNode(node); setDrawerOpen(true); }}
+          aria-label="More info"
+        >
+          <InfoOutlinedIcon fontSize="small" />
+        </IconButton>
       </button>
     )
   }
@@ -129,6 +143,38 @@ export default function SidebarTree({ tree = [], selectedReport, onSelectReport 
   return (
     <div className="flex flex-col gap-1">
       {tree.map(category => renderNode(category))}
+
+      <Drawer anchor="right" open={drawerOpen} onClose={() => setDrawerOpen(false)}>
+        <Box sx={{ width: 360, p: 3 }}>
+          <div className="flex items-start justify-between gap-3">
+            <div>
+              <h3 className="text-lg font-semibold text-slate-900">{drawerNode?.label}</h3>
+              {drawerNode?.children?.length ? (
+                <p className="text-sm text-slate-500 mt-1">{drawerNode.children.length} child nodes</p>
+              ) : (
+                <p className="text-sm text-slate-500 mt-1">Leaf report</p>
+              )}
+            </div>
+            <IconButton onClick={() => setDrawerOpen(false)}>
+              <CloseIcon />
+            </IconButton>
+          </div>
+
+          <div className="mt-4">
+            <p className="text-sm text-slate-600">Quick actions</p>
+            <div className="mt-3 flex flex-col gap-2">
+              {drawerNode && !drawerNode.children?.length && (
+                <button
+                  onClick={() => { onSelectReport(drawerNode.id, drawerNode.label); setDrawerOpen(false); }}
+                  className="rounded-md bg-blue-600 text-white px-3 py-2 text-sm"
+                >
+                  Open report
+                </button>
+              )}
+            </div>
+          </div>
+        </Box>
+      </Drawer>
     </div>
   )
 }

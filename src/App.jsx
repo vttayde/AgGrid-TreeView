@@ -253,15 +253,11 @@ export default function App(){
     <div className="h-screen w-screen bg-gradient-to-br from-slate-50 to-slate-100 flex flex-col">
       {/* Collapsible Header */}
       <div className="bg-gradient-to-r from-slate-900 to-slate-800 text-white shadow-md border-b border-slate-700 flex-shrink-0 transition-all duration-300">
-        <div className="flex flex-col gap-3 px-6 py-3 md:flex-row md:items-center md:justify-between">
+        <div className="flex items-center px-4 py-2 md:justify-between w-full gap-3">
           <div className="min-w-0">
-            {!headerCollapsed ? (
-              <>
-                <h1 className="font-bold text-2xl">📊 Portfolio Analytics Dashboard</h1>
-                <p className="text-sm text-slate-300 mt-1 max-w-2xl">Real-time analytics, interactive portfolio reporting, and live metrics in one workspace.</p>
-              </>
-            ) : (
-              <span className="text-lg font-semibold">📊 Portfolio Analytics Dashboard</span>
+            <h1 className="font-bold text-lg md:text-2xl truncate">📊 Portfolio Analytics Dashboard</h1>
+            {!headerCollapsed && (
+              <p className="text-sm text-slate-300 mt-1 max-w-2xl">Real-time analytics, interactive portfolio reporting, and live metrics in one workspace.</p>
             )}
           </div>
           <div className="flex flex-wrap items-center gap-2">
@@ -321,7 +317,7 @@ export default function App(){
         
         {/* Main Content Area */}
         <main className="flex-1 bg-white rounded-lg shadow-sm border border-slate-200 overflow-hidden flex flex-col">
-          <div className="bg-gradient-to-r from-slate-700 to-slate-800 px-6 py-3 text-white border-b border-slate-300 flex-shrink-0">
+          <div className="bg-gradient-to-r from-slate-700 to-slate-800 px-4 py-2 text-white border-b border-slate-300 flex-shrink-0">
             <div className="flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
               <div>
                 <h1 className="font-bold text-2xl">{selectedReportLabel || 'Select a Report'}</h1>
@@ -335,7 +331,7 @@ export default function App(){
             </div>
           </div>
           
-          <div className="flex-1 overflow-y-auto px-6 py-4 flex flex-col gap-4 min-h-0">
+          <div className="flex-1 overflow-y-auto px-4 py-3 flex flex-col gap-2 min-h-0">
           {error && (
             <div className="rounded-lg bg-red-50 border border-red-200 p-4">
               <p className="text-sm text-red-700 font-medium">⚠️ {error}</p>
@@ -410,7 +406,7 @@ export default function App(){
             </div>
           )}
           
-          <div className="flex-1 bg-slate-50 rounded-lg border border-slate-200 overflow-hidden">
+          <div className="flex-1 bg-slate-50 rounded-lg border border-slate-200 overflow-hidden flex flex-col min-h-0">
             <DataGrid
               reportId={selectedReport}
               reportName={selectedReportLabel}
