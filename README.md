@@ -46,6 +46,27 @@ Files created
 - [portfolio-poc/tailwind.config.cjs](portfolio-poc/tailwind.config.cjs)
 - [portfolio-poc/postcss.config.cjs](portfolio-poc/postcss.config.cjs)
 
+**Deploying to Vercel**
+
+- **Automatic (preferred)**: import this GitHub repository into Vercel:
+	1. Sign in to https://vercel.com and choose "Import Project" → "From Git Repository".
+	2. Select `vttayde/AgGrid-TreeView` and import.
+	3. Set Build Command to `npm run build` and Output Directory to `dist` (Vercel often auto-detects Vite).
+	4. Click "Deploy". Subsequent pushes to `main` (or to branches you enable) will auto-deploy.
+
+- **From local CLI**: install the Vercel CLI and run a one-off deploy:
+
+```bash
+npm i -g vercel
+cd "c:/Users/vinod.tayde_infobean/Desktop/POC AG/portfolio-poc"
+vercel --prod
+```
+
+- **Notes**:
+	- A `vercel.json` file was added to configure static-build and SPA routing.
+	- I created a branch `feat/vercel-deploy` with this config; push or make a PR to merge into `main`.
+	- If you want, I can create the PR for you or run a first deploy using the CLI (you'll need to provide Vercel auth when prompted).
+
 If you want, I can now:
 - Run `npm install` and `npm run dev` here (I cannot run commands in your shell without permission), or
 - Add example features: CSV export, row-detail drawer, server-side pagination.
