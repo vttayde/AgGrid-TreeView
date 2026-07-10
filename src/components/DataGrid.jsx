@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react'
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { AgGridReact } from 'ag-grid-react'
 import 'ag-grid-community/styles/ag-grid.css'
 import 'ag-grid-community/styles/ag-theme-alpine.css'
@@ -8,8 +8,79 @@ import Box from '@mui/material/Box'
 import TextField from '@mui/material/TextField'
 import Chip from '@mui/material/Chip'
 
-export default function DataGrid({ reportId, rowData = [], loading }){
-  const [gridApi, setGridApi] = useState(null)
+const filterChipSets = {
+  carts: [
+    { key: 'all', label: 'All orders' },
+    { key: 'high-value', label: 'High value' },
+    { key: 'discounted', label: 'Discounted' },
+    { key: 'large-order', label: 'Large orders' }
+  ],
+  tradeInventory: [
+    { key: 'all', label: 'All items' },
+    { key: 'low-stock', label: 'Low stock' },
+    { key: 'top-rated', label: 'Top rated' },
+    { key: 'discounted', label: 'Discounts' }
+  ],
+  categories: [
+    { key: 'all', label: 'All categories' },
+    { key: 'high-stock', label: 'High stock' },
+    { key: 'top-rated', label: 'Top rated' },
+    { key: 'high-volume', label: 'High products' }
+  ]
+}
+
+const cartReports = ['daily-transactions', 'high-value-orders', 'offline-store-sales', 'top-merchants', 'repeat-buyers', 'pos-returns']
+const categoryReports = ['category-performance', 'sales-by-category', 'supplier-performance']
+
+function getFilterChips(reportId) {
+  if (cartReports.includes(reportId)) return filterChipSets.carts
+  if (reportId === 'trade-inventory') return filterChipSets.tradeInventory
+  if (categoryReports.includes(reportId)) return filterChipSets.categories
+  return [{ key: 'all', label: 'All rows' }]
+}
+
+function createFilterModel(reportId, filterKey) {
+  if (filterKey === 'all') return null
+
+  if (cartReports.includes(reportId)) {
+    if (filterKey === 'high-value') return { total: { type: 'greaterThan', filter: 500 } }
+    if (filterKey === 'discounted') return { discountPercentage: { type: 'greaterThan', filter: 0 } }
+    if (filterKey === 'large-order') return { totalProducts: { type: 'greaterThan', filter: 4 } }
+  }
+
+  if (reportId === 'trade-inventory') {
+    if (filterKey === 'low-stock') return { stock: { type: 'lessThan', filter: 35 } }
+    if (filterKey === 'top-rated') return { rating: { type: 'greaterThan', filter: 4 } }
+    if (filterKey === 'discounted') return { discountPercentage: { type: 'greaterThan', filter: 0 } }
+  }
+
+  if (categoryReports.includes(reportId)) {
+    if (filterKey === 'high-stock') return { totalStock: { type: 'greaterThan', filter: 100 } }
+    if (filterKey === 'top-rated') return { averageRating: { type: 'greaterThan', filter: 4 } }
+    if (filterKey === 'high-volume') return { productCount: { type: 'greaterThan', filter: 25 } }
+  }
+
+  return null
+}
+
+function formatCurrency(value) {
+  if (value === undefined || value === null || Number.isNaN(Number(value))) return '-'
+  return `$${Number(value).toLocaleString()}`
+}
+
+function formatPercent(value) {
+  if (value === undefined || value === null || Number.isNaN(Number(value))) return '-'
+  return `${Number(value)}%`
+}
+
+const rowClassRules = {
+  'row-high-priority': params => params.data?.priority === 'High',
+  'row-completed': params => params.data?.status === 'Completed',
+  'row-low-progress': params => params.data?.progress !== undefined && params.data.progress < 30
+}
+
+export default function DataGrid({ reportId, rowData = [], loading }) {
+  const gridApiRef = useRef(null)
   const [drawerOpen, setDrawerOpen] = useState(false)
   const [selectedRow, setSelectedRow] = useState(null)
   const [quickFilter, setQuickFilter] = useState('')
@@ -17,37 +88,30 @@ export default function DataGrid({ reportId, rowData = [], loading }){
   const [activeChip, setActiveChip] = useState('all')
 
   useEffect(() => {
-    if(gridApi) gridApi.setQuickFilter(quickFilter)
-  }, [gridApi, quickFilter])
+    const api = gridApiRef.current
+    if (!api) return
+    if (loading) api.showLoadingOverlay()
+    else if (!rowData.length) api.showNoRowsOverlay()
+    else api.hideOverlay()
+  }, [loading, rowData])
 
-  useEffect(() => {
-    if(!gridApi) return
-    if(loading) {
-      gridApi.showLoadingOverlay()
-    } else if (!rowData.length) {
-      gridApi.showNoRowsOverlay()
-    } else {
-      gridApi.hideOverlay()
-    }
-  }, [gridApi, loading, rowData])
+  const defaultColDef = useMemo(
+    () => ({ sortable: true, filter: true, resizable: true, minWidth: 120, flex: 1 }),
+    []
+  )
 
-  const defaultColDef = useMemo(() => ({
-    sortable: true,
-    filter: true,
-    resizable: true,
-    minWidth: 120,
-    flex: 1
-  }), [])
+  const filterChips = useMemo(() => getFilterChips(reportId), [reportId])
 
   const columnDefs = useMemo(() => {
-    switch(reportId){
+    switch (reportId) {
       case 'daily-transactions':
       case 'high-value-orders':
         return [
-          { headerName: 'Order ID', width: 100, pinned: 'left', valueGetter: params => {
-              // prefer explicit orderId from data, otherwise show the row index as order number
-              return params.data?.orderId ?? (params.node?.rowIndex != null ? params.node.rowIndex + 1 : '')
-            }
+          {
+            headerName: 'Order ID',
+            width: 100,
+            pinned: 'left',
+            valueGetter: params => params.data?.orderId ?? (params.node?.rowIndex != null ? params.node.rowIndex + 1 : '')
           },
           { field: 'userName', headerName: 'User', width: 140 },
           { field: 'date', headerName: 'Date', width: 140 },
@@ -88,106 +152,34 @@ export default function DataGrid({ reportId, rowData = [], loading }){
     }
   }, [reportId])
 
-  const formatCurrency = value => {
-    if (value === undefined || value === null || Number.isNaN(Number(value))) return '-'
-    return `$${Number(value).toLocaleString()}`
-  }
+  const onGridReady = useCallback(params => {
+    gridApiRef.current = params.api
+  }, [])
 
-  const formatPercent = value => {
-    if (value === undefined || value === null || Number.isNaN(Number(value))) return '-'
-    return `${Number(value)}%`
-  }
+  const handleRowClicked = useCallback(params => {
+    setSelectedRow(params.data)
+    setDrawerOpen(true)
+  }, [])
 
-  const getFilterChips = useMemo(() => {
-    if (reportId === 'daily-transactions' || reportId === 'high-value-orders' || reportId === 'offline-store-sales' || reportId === 'top-merchants' || reportId === 'repeat-buyers' || reportId === 'pos-returns') {
-      return [
-        { key: 'all', label: 'All orders' },
-        { key: 'high-value', label: 'High value' },
-        { key: 'discounted', label: 'Discounted' },
-        { key: 'large-order', label: 'Large orders' }
-      ]
-    }
+  const handleSelectionChanged = useCallback(params => {
+    setSelectedCount(params.api.getSelectedRows().length)
+  }, [])
 
-    if (reportId === 'trade-inventory') {
-      return [
-        { key: 'all', label: 'All items' },
-        { key: 'low-stock', label: 'Low stock' },
-        { key: 'top-rated', label: 'Top rated' },
-        { key: 'discounted', label: 'Discounts' }
-      ]
-    }
-
-    if (reportId === 'category-performance' || reportId === 'sales-by-category' || reportId === 'supplier-performance') {
-      return [
-        { key: 'all', label: 'All categories' },
-        { key: 'high-stock', label: 'High stock' },
-        { key: 'top-rated', label: 'Top rated' },
-        { key: 'high-volume', label: 'High products' }
-      ]
-    }
-
-    return [
-      { key: 'all', label: 'All rows' }
-    ]
-  }, [reportId])
-
-  const applyFilterModel = (filterKey) => {
-    if (!gridApi) return
-
-    if (filterKey === 'all') {
-      gridApi.setFilterModel(null)
-      return
-    }
-
-    const model = {}
-
-    if (reportId === 'daily-transactions' || reportId === 'high-value-orders') {
-      if (filterKey === 'high-value') {
-        model.total = { type: 'greaterThan', filter: 500 }
-      } else if (filterKey === 'discounted') {
-        model.discountPercentage = { type: 'greaterThan', filter: 0 }
-      } else if (filterKey === 'large-order') {
-        model.totalProducts = { type: 'greaterThan', filter: 4 }
-      }
-    }
-
-    if (reportId === 'trade-inventory') {
-      if (filterKey === 'low-stock') {
-        model.stock = { type: 'lessThan', filter: 35 }
-      } else if (filterKey === 'top-rated') {
-        model.rating = { type: 'greaterThan', filter: 4 }
-      } else if (filterKey === 'discounted') {
-        model.discountPercentage = { type: 'greaterThan', filter: 0 }
-      }
-    }
-
-    if (reportId === 'category-performance' || reportId === 'sales-by-category' || reportId === 'supplier-performance') {
-      if (filterKey === 'high-stock') {
-        model.totalStock = { type: 'greaterThan', filter: 100 }
-      } else if (filterKey === 'top-rated') {
-        model.averageRating = { type: 'greaterThan', filter: 4 }
-      } else if (filterKey === 'high-volume') {
-        model.productCount = { type: 'greaterThan', filter: 25 }
-      }
-    }
-
-    gridApi.setFilterModel(model)
-  }
-
-  const applyChip = chip => {
-    setActiveChip(chip.key)
+  const handleClearFilter = useCallback(() => {
     setQuickFilter('')
-    if (gridApi) {
-      gridApi.setQuickFilter('')
-      applyFilterModel(chip.key)
-    }
-  }
+  }, [])
 
-  const rowClassRules = useMemo(() => ({
-    'row-high-priority': params => params.data?.priority === 'High',
-    'row-completed': params => params.data?.status === 'Completed',
-    'row-low-progress': params => params.data?.progress !== undefined && params.data.progress < 30
-  }), [])
+  const applyChip = useCallback(
+    chip => {
+      setActiveChip(chip.key)
+      setQuickFilter('')
+      const api = gridApiRef.current
+      if (!api) return
+      api.setQuickFilter('')
+      api.setFilterModel(createFilterModel(reportId, chip.key))
+    },
+    [reportId]
+  )
 
   return (
     <div className="h-full w-full flex flex-col gap-1 overflow-hidden">
@@ -230,7 +222,7 @@ export default function DataGrid({ reportId, rowData = [], loading }){
               variant="outlined"
               size="small"
               sx={{ textTransform: 'none', minWidth: 84 }}
-              onClick={() => setQuickFilter('')}
+              onClick={handleClearFilter}
             >
               Clear
             </Button>
@@ -243,7 +235,7 @@ export default function DataGrid({ reportId, rowData = [], loading }){
               variant="contained"
               size="small"
               sx={{ backgroundColor: '#2563eb', textTransform: 'none', boxShadow: '0 10px 20px rgba(37,99,235,0.12)' }}
-              onClick={() => gridApi?.exportDataAsCsv({ onlySelected: true })}
+              onClick={() => gridApiRef.current?.exportDataAsCsv({ onlySelected: true })}
             >
               📥 Export Selected
             </Button>
@@ -251,25 +243,23 @@ export default function DataGrid({ reportId, rowData = [], loading }){
               variant="outlined"
               size="small"
               sx={{ textTransform: 'none', borderColor: '#e2e8f0', color: '#475569', minWidth: 92 }}
-              onClick={() => gridApi?.exportDataAsCsv()}
+              onClick={() => gridApiRef.current?.exportDataAsCsv()}
             >
               📊 Export All
             </Button>
-            {getFilterChips.length > 0 && (
-              <div className="flex flex-wrap items-center gap-2">
-                {getFilterChips.map(chip => (
-                  <Chip
-                    key={chip.key}
-                    label={chip.label}
-                    size="small"
-                    clickable
-                    color={chip.key === activeChip ? 'primary' : 'default'}
-                    onClick={() => applyChip(chip)}
-                    sx={{ textTransform: 'none', fontWeight: chip.key === activeChip ? 600 : 500 }}
-                  />
-                ))}
-              </div>
-            )}
+            <div className="flex flex-wrap items-center gap-2">
+              {filterChips.map(chip => (
+                <Chip
+                  key={chip.key}
+                  label={chip.label}
+                  size="small"
+                  clickable
+                  color={chip.key === activeChip ? 'primary' : 'default'}
+                  onClick={() => applyChip(chip)}
+                  sx={{ textTransform: 'none', fontWeight: chip.key === activeChip ? 600 : 500 }}
+                />
+              ))}
+            </div>
           </div>
 
           <div className="text-xs text-slate-500">
@@ -279,7 +269,7 @@ export default function DataGrid({ reportId, rowData = [], loading }){
       </div>
 
       <div className="flex-1 bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden flex flex-col min-h-0">
-        <div className="ag-theme-alpine flex-1 overflow-hidden" style={{height: '100%', width: '100%'}}>
+        <div className="ag-theme-alpine flex-1 overflow-hidden" style={{ height: '100%', width: '100%' }}>
           <AgGridReact
             rowData={rowData}
             quickFilterText={quickFilter}
@@ -288,9 +278,9 @@ export default function DataGrid({ reportId, rowData = [], loading }){
             rowSelection="multiple"
             animateRows
             rowClassRules={rowClassRules}
-            onGridReady={params => { setGridApi(params.api); }}
-            onRowClicked={params => { setSelectedRow(params.data); setDrawerOpen(true) }}
-            onSelectionChanged={params => setSelectedCount(params.api.getSelectedRows().length)}
+            onGridReady={onGridReady}
+            onRowClicked={handleRowClicked}
+            onSelectionChanged={handleSelectionChanged}
             overlayLoadingTemplate='<span class="ag-overlay-loading-center">⏳ Loading data...</span>'
             overlayNoRowsTemplate='<span class="ag-overlay-loading-center">📭 Select a report to load results</span>'
           />
@@ -301,14 +291,14 @@ export default function DataGrid({ reportId, rowData = [], loading }){
         <Box sx={{ width: 420, padding: 4, background: '#f8fafc' }}>
           <div className="flex items-center justify-between mb-4">
             <h3 className="text-lg font-bold text-slate-900">📋 Row Details</h3>
-            <button 
+            <button
               onClick={() => setDrawerOpen(false)}
               className="text-slate-400 hover:text-slate-600 text-2xl"
             >
               ✕
             </button>
           </div>
-          
+
           {selectedRow ? (
             <div className="space-y-3">
               {Object.entries(selectedRow).map(([key, value]) => (
